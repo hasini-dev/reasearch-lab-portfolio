@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMOS Fabrication Tutorial</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #1a1a1a;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .sidebar h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        .sidebar button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+        }
+        .sidebar button:hover {
+            background-color: #555;
+        }
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+        .viewer {
+            flex: 1;
+            max-width: 65vw;
+            max-height: 70vh;
+            background-color: white;
+            margin-right: 20px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .flashcard {
+            width: 400px;
+            max-height: 70vh;
+            perspective: 1000px;
+        }
+        .card {
+            width: 100%;
+            height: 300px;
+            font-size: 1.2em;
+            font-weight: 500;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+        .card .front,
+        .card .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #ffffff;
+            white-space: pre-line;
+            text-align: left;
+        }
+        .card .back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>CMOS Fabrication Steps</h2>
+        <button onclick="showStep('1. Wafer Preparation', 
+            '• Start with high-purity silicon wafer\n• Slice from single-crystal ingot\n• Clean with solvents, acids, and water\n• Polish using CMP',
+            'wafer_preparation.gltf')">Wafer Preparation</button>
+        <button onclick="showStep('2. Oxidation', 
+            '• Grow SiO₂ layer via thermal oxidation\n• Heat wafer to 900–1200°C\n• Use dry or wet oxidation\n• Measure thickness with ellipsometry',
+            'oxidation.gltf')">Oxidation</button>
+        <button onclick="showStep('3. Photolithography', 
+            '• Spin-coat photoresist\n• Expose to DUV/EUV light via mask\n• Develop to form pattern\n• Enable features as small as 5 nm',
+            'photolithography.gltf')">Photolithography</button>
+        <button onclick="showStep('4. Etching', 
+            '• Remove material using wet or dry etching\n• Wet: isotropic with chemicals\n• Dry: anisotropic with plasma\n• Strip resist and clean residues',
+            'etching.gltf')">Etching</button>
+        <button onclick="showStep('5. Doping', 
+            '• Introduce impurities via ion implantation\n• Use boron (p-type) or phosphorus (n-type)\n• Anneal to repair damage\n• Verify with SIMS',
+            'doping.gltf')">Doping</button>
+        <button onclick="showStep('6. Deposition', 
+            '• Deposit thin films using CVD, PVD, or ALD\n• Polysilicon for gates via LPCVD\n• Dielectrics via PECVD\n• Monitor film properties',
+            'deposition.gltf')">Deposition</button>
+        <button onclick="showStep('7. Metallization', 
+            '• Form interconnects with copper or aluminum\n• Use damascene or subtractive process\n• Add barrier layers\n• Use low-κ dielectrics',
+            'metallization.gltf')">Metallization</button>
+        <button onclick="showStep('8. Packaging', 
+            '• Test and dice wafer into dies\n• Bond to substrates\n• Connect via wire bonding or flip-chip\n• Encapsulate for protection',
+            'packaging.gltf')">Packaging</button>
+    </div>
+    <div class="content">
+        <div class="viewer"></div>
+        <div id="model-error" style="color: red; margin-top: 10px; display: none;"></div>
+        <div class="flashcard">
+            <div class="card" onclick="this.classList.toggle('flipped')">
+                <div class="front" id="card-front">Click a step</div>
+                <div class="back" id="card-back">Flashcard info</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const steps = [
+            {
+                title: "1. Wafer Preparation",
+                description: "The process begins with a high-purity silicon wafer, typically 300 mm in diameter for modern semiconductor manufacturing. The wafer is sliced from a single-crystal silicon ingot grown using the Czochralski process, ensuring minimal defects. It undergoes rigorous cleaning with solvents, acids (e.g., RCA clean), and deionized water to remove organic, metallic, and particulate contaminants. The surface is then polished to atomic-level smoothness using chemical-mechanical planarization (CMP) to provide a flawless foundation for nanoscale patterning.",
+                quiz: { question: "What is the typical diameter of a silicon wafer?", options: ["100 mm", "200 mm", "300 mm", "400 mm"], answer: "300 mm" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "wafer_preparation.gltf"
+            },
+            {
+                title: "2. Oxidation",
+                description: "A critical insulating layer of silicon dioxide (SiO₂) is grown on the wafer surface through thermal oxidation. The wafer is heated to 900–1200°C in an oxygen-rich environment (dry oxidation) or steam (wet oxidation), forming a uniform SiO₂ layer with precise thickness control (often 10–100 nm). This layer serves multiple purposes: as a diffusion barrier for dopants, a dielectric for transistors, and a protective mask during etching. The thickness and quality of the oxide are meticulously measured using ellipsometry to ensure device reliability.",
+                quiz: { question: "What is the purpose of the SiO2 layer?", options: ["Conductor", "Insulator", "Substrate", "Dopant"], answer: "Insulator" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 400, 10);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("SiO2 Layer", 250, 95);
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "oxidation.gltf"
+            },
+            {
+                title: "3. Photolithography",
+                description: "Photolithography transfers circuit patterns onto the wafer with nanoscale precision. A photosensitive polymer (photoresist) is spin-coated onto the oxide layer, then exposed to deep ultraviolet (DUV) or extreme ultraviolet (EUV) light through a quartz photomask containing the circuit design. The exposed resist undergoes a chemical change, and development removes either the exposed (positive resist) or unexposed (negative resist) regions. Advanced techniques like immersion lithography or multiple patterning push resolution below the wavelength of light, enabling features as small as 5 nm.",
+                quiz: { question: "What defines the pattern in photolithography?", options: ["Laser", "Mask", "Chemical", "Heat"], answer: "Mask" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 400, 10);
+                    ctx.fillStyle = "#e74c3c";
+                    ctx.fillRect(150, 70, 100, 20);
+                    ctx.fillRect(350, 70, 100, 20);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Photoresist", 180, 85);
+                    ctx.fillText("SiO2 Layer", 250, 95);
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "photolithography.gltf"
+            },
+            {
+                title: "4. Etching",
+                description: "Etching selectively removes material to transfer the resist pattern into the underlying layers. Wet etching uses chemicals like hydrofluoric acid (HF) for isotropic removal, while dry etching (e.g., reactive ion etching, RIE) employs plasma (e.g., CF₄, Cl₂) for anisotropic, high-aspect-ratio features. The process is tightly controlled to achieve precise critical dimensions (CDs), with endpoint detection ensuring the etch stops at the correct layer. Post-etch, the remaining resist is stripped using oxygen plasma or solvents, and the wafer is cleaned to remove residues.",
+                quiz: { question: "What removes material in etching?", options: ["UV Light", "Chemical/Plasma", "Heat", "Water"], answer: "Chemical/Plasma" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 150, 10);
+                    ctx.fillRect(350, 90, 150, 10);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Etched SiO2", 170, 95);
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "etching.gltf"
+            },
+            {
+                title: "5. Doping",
+                description: "Doping modifies the silicon's electrical properties by introducing controlled impurities. Ion implantation accelerates dopant atoms (e.g., boron for p-type, phosphorus/arsenic for n-type) into the silicon at specific energies (1–100 keV) and doses (1e11–1e16 atoms/cm²). Annealing at high temperatures (600–1000°C) repairs crystal damage and activates dopants. Alternatively, diffusion doping uses gas-phase sources (e.g., B₂H₆, POCl₃) at high temperatures. Dopant profiles are verified using techniques like secondary ion mass spectrometry (SIMS) to ensure proper transistor threshold voltages.",
+                quiz: { question: "What creates n-type regions?", options: ["Boron", "Phosphorus", "Silicon", "Oxygen"], answer: "Phosphorus" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 150, 10);
+                    ctx.fillRect(350, 90, 150, 10);
+                    ctx.fillStyle = "#27ae60";
+                    ctx.fillRect(150, 100, 100, 40);
+                    ctx.fillRect(350, 100, 100, 40);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Doped Regions", 250, 130);
+                    ctx.fillText("SiO2 Layer", 250, 95);
+                    ctx.fillText("Silicon Wafer", 250, 150);
+                },
+                model: "doping.gltf"
+            },
+            {
+                title: "6. Deposition",
+                description: "Thin films are deposited using techniques like chemical vapor deposition (CVD), physical vapor deposition (PVD), or atomic layer deposition (ALD). Polysilicon (for transistor gates) is deposited via low-pressure CVD (LPCVD) from silane gas (SiH₄). Dielectrics (e.g., SiO₂, Si₃N₄) are grown using plasma-enhanced CVD (PECVD) for interlayer insulation. ALD enables ultra-thin (angstrom-level), conformal films for high-κ gate dielectrics (e.g., HfO₂). Film properties (thickness, stress, uniformity) are monitored in real-time to ensure device performance and yield.",
+                quiz: { question: "What is a common deposition technique?", options: ["Etching", "CVD", "Photolithography", "Doping"], answer: "CVD" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 150, 10);
+                    ctx.fillRect(350, 90, 150, 10);
+                    ctx.fillStyle = "#27ae60";
+                    ctx.fillRect(150, 100, 100, 40);
+                    ctx.fillRect(350, 100, 100, 40);
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillRect(170, 70, 60, 20);
+                    ctx.fillRect(370, 70, 60, 20);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Polysilicon Gate", 160, 80);
+                    ctx.fillText("SiO2 Layer", 250, 95);
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "deposition.gltf"
+            },
+            {
+                title: "7. Metallization",
+                description: "Interconnects are formed using damascene or subtractive processes. For copper interconnects (modern nodes), a dielectric is etched, lined with a barrier (e.g., Ta/TaN), and filled with Cu via electroplating, followed by CMP to planarize. Aluminum (historically used) is sputtered and etched. Multiple metal layers (up to 15 in advanced chips) are connected by vias lined with TiN/W or Cu. Low-κ dielectrics (e.g., porous SiO₂) reduce capacitive coupling. Electromigration resistance and resistivity are critical for signal integrity and power efficiency.",
+                quiz: { question: "What metal is commonly used in metallization?", options: ["Gold", "Copper", "Silver", "Iron"], answer: "Copper" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(100, 100, 400, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(100, 90, 150, 10);
+                    ctx.fillRect(350, 90, 150, 10);
+                    ctx.fillStyle = "#27ae60";
+                    ctx.fillRect(150, 100, 100, 40);
+                    ctx.fillRect(350, 100, 100, 40);
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillRect(170, 70, 60, 20);
+                    ctx.fillRect(370, 70, 60, 20);
+                    ctx.fillStyle = "#7f8c8d";
+                    ctx.fillRect(150, 60, 300, 10);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Metal Interconnect", 250, 65);
+                    ctx.fillText("Polysilicon Gate", 160, 80);
+                    ctx.fillText("SiO2 Layer", 250, 95);
+                    ctx.fillText("Silicon Wafer", 250, 130);
+                },
+                model: "metallization.gltf"
+            },
+            {
+                title: "8. Packaging",
+                description: "The wafer is tested (using probe cards) and diced into individual dies with diamond saws or laser ablation. Functional dies are bonded to substrates (e.g., organic laminate or ceramic) using epoxy or solder. Wire bonding (Au or Cu wires) or flip-chip bumping (solder balls) connects die pads to package pins. Encapsulation (molded epoxy or hermetic sealing) protects against moisture and mechanical stress. Advanced packaging (e.g., 2.5D/3D ICs) uses silicon interposers or through-silicon vias (TSVs) for high-density interconnects, enabling systems-in-package (SiP) solutions.",
+                quiz: { question: "What happens during packaging?", options: ["Doping", "Etching", "Dicing and Mounting", "Oxidation"], answer: "Dicing and Mounting" },
+                draw: (ctx) => {
+                    ctx.fillStyle = "#aaa";
+                    ctx.fillRect(250, 100, 100, 50);
+                    ctx.fillStyle = "#3498db";
+                    ctx.fillRect(250, 90, 100, 10);
+                    ctx.fillStyle = "#27ae60";
+                    ctx.fillRect(270, 100, 60, 50);
+                    ctx.fillStyle = "#f1c40f";
+                    ctx.fillRect(280, 70, 40, 20);
+                    ctx.fillStyle = "#7f8c8d";
+                    ctx.fillRect(270, 60, 60, 10);
+                    ctx.fillStyle = "#d35400";
+                    ctx.fillRect(230, 150, 140, 20);
+                    ctx.fillStyle = "#000";
+                    ctx.font = "14px Arial";
+                    ctx.fillText("Packaged Chip", 270, 130);
+                },
+                model: "packaging.gltf"
+            }
+        ];
+        const viewer = document.querySelector('.viewer');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            viewer.clientWidth / viewer.clientHeight,
+            0.1,
+            1000
+        );
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+        viewer.appendChild(renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.enablePan = true;
+        controls.update();
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+        const loader = new THREE.GLTFLoader();
+        let currentModel = null;
+        camera.position.z = 5;
+        function loadModel(modelPath) {
+            if (currentModel) {
+                scene.remove(currentModel);
+                disposeModel(currentModel);
+                currentModel = null;
+            }
+            loader.load(
+                modelPath,
+                function (gltf) {
+                    currentModel = gltf.scene;
+                    scene.add(currentModel);
+                    document.getElementById('model-error').style.display = 'none';
+                },
+                undefined,
+                function (error) {
+                    console.error('Error loading model:', error);
+                    const errorDiv = document.getElementById('model-error');
+                    errorDiv.innerText = 'Error loading 3D model: ' + (error.message || error);
+                    errorDiv.style.display = 'block';
+                }
+            );
+        }
+        function disposeModel(model) {
+            model.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    if (child.material.isMaterial) {
+                        cleanMaterial(child.material);
+                    } else {
+                        for (const material of child.material) cleanMaterial(material);
+                    }
+                }
+            });
+        }
+        function cleanMaterial(material) {
+            material.dispose();
+            for (const key in material) {
+                const value = material[key];
+                if (value && typeof value === 'object' && 'minFilter' in value) {
+                    value.dispose();
+                }
+            }
+        }
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        function showStep(title, content, modelPath) {
+            document.getElementById('card-front').innerText = title;
+            document.getElementById('card-back').innerText = content;
+            document.querySelector('.card').classList.remove('flipped');
+            loadModel(modelPath);
+        }
+        window.addEventListener('resize', () => {
+            const width = viewer.clientWidth;
+            const height = viewer.clientHeight;
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+    </script>
+</body>
+</html>
