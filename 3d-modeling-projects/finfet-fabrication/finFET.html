@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FinFET Fabrication Tutorial</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: #1a1a1a;
+      color: white;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background-color: #333;
+      color: white;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .sidebar button:hover {
+      background-color: #555;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      background-color: #f0f0f0;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .viewer {
+      flex: 1;
+      max-width: 65vw;
+      max-height: 70vh;
+      background-color: white;
+      margin-right: 20px;
+      box-sizing: border-box;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .flashcard {
+      width: 400px;
+      max-height: 70vh;
+      perspective: 1000px;
+    }
+
+    .card {
+      width: 100%;
+      height: 300px;
+      font-size: 1.1em;
+      font-weight: 500;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.8s;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card .front,
+    .card .back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background-color: #ffffff;
+      white-space: pre-line;
+      text-align: left;
+    }
+
+    .card .back {
+      transform: rotateY(180deg);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar">
+    <h2>FinFET Steps</h2>
+    <button onclick="showStep(0)">Substrate Preparation</button>
+    <button onclick="showStep(1)">Fin Patterning</button>
+    <button onclick="showStep(2)">Shallow Trench Isolation</button>
+    <button onclick="showStep(3)">Gate Stack Formation</button>
+    <button onclick="showStep(4)">Spacer Formation</button>
+    <button onclick="showStep(5)">Source/Drain Formation</button>
+    <button onclick="showStep(6)">Contact Formation</button>
+    <button onclick="showStep(7)">Interconnect Formation</button>
+  </div>
+
+  <div class="content">
+    <div class="viewer" id="viewer"></div>
+    <div class="flashcard">
+      <div class="card" onclick="this.classList.toggle('flipped')">
+        <div class="front" id="card-front">Click a step</div>
+        <div class="back" id="card-back">Description</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    const steps = [
+      {
+        title: "Substrate Preparation",
+        desc: "Start with a clean, lightly doped silicon wafer.\n• Remove all contaminants\n• Grow or deposit a thin SiO₂ layer if needed\n• Ensures a uniform and reliable base",
+        model: "finfet_substrate.glb"
+      },
+      {
+        title: "Fin Patterning",
+        desc: "Define fins using photolithography and etching.\n• Apply photoresist and pattern narrow lines\n• Etch with RIE to form high-aspect fins\n• Critical for transistor performance",
+        model: "finfet_patterning.glb"
+      },
+      {
+        title: "Shallow Trench Isolation",
+        desc: "Electrically isolate fins from each other.\n• Etch trenches between fins\n• Fill with dielectric (e.g. SiO₂)\n• Polish surface flat with CMP",
+        model: "finfet_sti.glb"
+      },
+      {
+        title: "Gate Stack Formation",
+        desc: "Form the gate around the fin.\n• Deposit high-k dielectric (e.g. HfO₂)\n• Add metal gate to wrap fin\n• Enhances channel control",
+        model: "finfet_gate.glb"
+      },
+      {
+        title: "Spacer Formation",
+        desc: "Add spacers for ion implantation masking.\n• Deposit silicon nitride\n• Anisotropic etch forms sidewalls\n• Helps shape the source/drain",
+        model: "finfet_spacers.glb"
+      },
+      {
+        title: "Source/Drain Formation",
+        desc: "Doping for source/drain contacts.\n• Ion implantation or selective epitaxy\n• May use SiGe or SiC for strain\n• Boosts performance",
+        model: "finfet_sd.glb"
+      },
+      {
+        title: "Contact Formation",
+        desc: "Connect to source, drain, and gate.\n• Etch contact holes\n• Deposit barrier and tungsten metal fill\n• Low-resistance electrical links",
+        model: "finfet_contacts.glb"
+      },
+      {
+        title: "Interconnect Formation",
+        desc: "Build wiring layers for the chip.\n• Deposit Cu/Al with low-k dielectrics\n• Form vias and multi-level metal lines\n• Finalize circuit layout",
+        model: "finfet_interconnect.glb"
+      }
+    ];
+
+    let scene, camera, renderer, controls, currentModel;
+
+    const viewer = document.getElementById("viewer");
+
+    scene = new THREE.Scene();
+    camera = new THREE.PerspectiveCamera(75, viewer.clientWidth / viewer.clientHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+    viewer.appendChild(renderer.domElement);
+
+    const ambientLight = new THREE.AmbientLight(0x404040);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(1, 1, 1);
+    scene.add(directionalLight);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.update();
+
+    const loader = new THREE.GLTFLoader();
+
+    function loadModel(path) {
+      if (currentModel) {
+        scene.remove(currentModel);
+        disposeModel(currentModel);
+      }
+      loader.load(path, (gltf) => {
+        currentModel = gltf.scene;
+        scene.add(currentModel);
+        const box = new THREE.Box3().setFromObject(currentModel);
+        const center = box.getCenter(new THREE.Vector3());
+        currentModel.position.sub(center);
+        controls.target.copy(center);
+        controls.update();
+      }, undefined, (error) => {
+        console.error("Model load error:", error);
+      });
+    }
+
+    function disposeModel(model) {
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.geometry.dispose();
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => m.dispose());
+          } else {
+            child.material.dispose();
+          }
+        }
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+      controls.update();
+    }
+    animate();
+
+    function showStep(index) {
+      const step = steps[index];
+      document.getElementById('card-front').innerText = step.title;
+      document.getElementById('card-back').innerText = step.desc;
+      document.querySelector('.card').classList.remove('flipped');
+      loadModel(step.model);
+    }
+
+    window.addEventListener("resize", () => {
+      const width = viewer.clientWidth;
+      const height = viewer.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    });
+  </script>
+</body>
+
+</html>
