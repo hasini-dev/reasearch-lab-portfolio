@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vending Machine FSMC Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+            gap: 20px;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .vending-machine {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            gap: 10px;
+            background-color: #333;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .item {
+            background-color: #fff;
+            border: 2px solid #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100px;
+            cursor: pointer;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .item:hover {
+            background-color: #e0e0e0;
+        }
+        .item.selected {
+            border-color: #33d;
+            background-color: #d0e0ff;
+        }
+        .item img {
+            max-width: 50px;
+            max-height: 50px;
+        }
+        .item p {
+            margin: 5px 0;
+            font-size: 12px;
+            text-align: center;
+        }
+        .money-input {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .coin, .bill {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .coin:hover, .bill:hover {
+            transform: scale(1.1);
+        }
+        .dime { background-color: #aaa; }
+        .quarter { background-color: #888; }
+        .bill {
+            border-radius: 5px;
+            width: 80px;
+            height: 40px;
+            background-color: #2a6;
+        }
+        #submit {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #33d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #submit:hover {
+            background-color: #22b;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+        #restart {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #d33;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #restart:hover {
+            background-color: #b22;
+        }
+        .state-panel {
+            background-color: #fff;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 20px;
+            width: 200px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        .state-panel h3 {
+            margin: 0 0 10px;
+            text-align: center;
+        }
+        .state {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .state.active {
+            background-color: #33d;
+            color: white;
+        }
+        .cart {
+            margin-top: 20px;
+            background-color: #fff;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        .cart h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        .cart-items {
+            margin-bottom: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .cart-total {
+            font-weight: bold;
+            text-align: right;
+            padding-top: 5px;
+        }
+        #checkout {
+            margin-top: 10px;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            background-color: #3a3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        #checkout:hover {
+            background-color: #282;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Vending Machine FSMC Game</h1>
+        <div class="vending-machine" id="vending-machine"></div>
+        
+        <div class="cart">
+            <h3>Your Cart</h3>
+            <div class="cart-items" id="cart-items">
+                <p>No items selected</p>
+            </div>
+            <div class="cart-total" id="cart-total">Total: $0.00</div>
+            <button id="checkout" onclick="checkout()">Checkout</button>
+        </div>
+        
+        <div class="money-input">
+            <div class="coin dime" onclick="queueMoney(0.10)">10¢</div>
+            <div class="coin quarter" onclick="queueMoney(0.25)">25¢</div>
+            <div class="bill" onclick="queueMoney(1.00)">$1</div>
+            <button id="submit" onclick="submitMoney()">Submit</button>
+        </div>
+        <div id="status">Select products to start</div>
+        <button id="restart" onclick="restart()">Restart</button>
+    </div>
+    <div class="state-panel">
+        <h3>FSMC States</h3>
+        <div class="state" id="state-waiting">WAITING</div>
+        <div class="state" id="state-collecting">COLLECTING</div>
+        <div class="state" id="state-dispensing">DISPENSING</div>
+        <div class="state" id="state-returning">RETURNING_CHANGE</div>
+    </div>
+
+    <script>
+        // Vending machine products (replace with your image URLs and details)
+        const products = [
+            { name: "Chips", price: 1.50, img: "chips.jpg" },
+            { name: "Soda", price: 2.00, img: "soda.jpg" },
+            { name: "Candy", price: 1.00, img: "candy.jpg" },
+            { name: "Water", price: 1.25, img: "water.jpg" },
+            { name: "Gum", price: 0.75, img: "gum.jpg" },
+            { name: "Cookies", price: 1.75, img: "cookies.jpg" },
+            { name: "Juice", price: 2.25, img: "juice.jpg" },
+            { name: "Crackers", price: 1.50, img: "crackers.jpg" },
+            { name: "Nuts", price: 2.00, img: "nuts.jpg" },
+            { name: "Bar", price: 1.25, img: "bar.jpg" },
+            { name: "Popcorn", price: 1.50, img: "popcorn.jpg" },
+            { name: "Tea", price: 2.00, img: "tea.jpg" },
+            { name: "Coffee", price: 2.50, img: "coffee.jpg" },
+            { name: "Mints", price: 0.50, img: "mints.jpg" },
+            { name: "Pretzels", price: 1.75, img: "pretzels.jpg" },
+            { name: "Energy Drink", price: 3.00, img: "energy.jpg" }
+        ];
+
+        // FSMC states
+        const STATES = {
+            WAITING: 'WAITING',
+            COLLECTING: 'COLLECTING',
+            DISPENSING: 'DISPENSING',
+            RETURNING_CHANGE: 'RETURNING_CHANGE'
+        };
+
+        let currentState = STATES.WAITING;
+        let selectedProducts = [];
+        let queuedMoney = 0;
+        let totalInserted = 0;
+
+        // Initialize vending machine grid
+        function initVendingMachine() {
+            const vendingMachine = document.getElementById('vending-machine');
+            vendingMachine.innerHTML = '';
+            products.forEach((product, index) => {
+                const item = document.createElement('div');
+                item.className = 'item';
+                item.innerHTML = `
+                    <img src="${product.img}" alt="${product.name}">
+                    <p>${product.name}</p>
+                    <p>$${product.price.toFixed(2)}</p>
+                `;
+                item.onclick = () => selectProduct(index);
+                vendingMachine.appendChild(item);
+            });
+        }
+
+        // Update state panel highlight
+        function updateStatePanel() {
+            const stateElements = {
+                [STATES.WAITING]: document.getElementById('state-waiting'),
+                [STATES.COLLECTING]: document.getElementById('state-collecting'),
+                [STATES.DISPENSING]: document.getElementById('state-dispensing'),
+                [STATES.RETURNING_CHANGE]: document.getElementById('state-returning')
+            };
+            Object.values(stateElements).forEach(el => el.classList.remove('active'));
+            stateElements[currentState].classList.add('active');
+        }
+
+        // Update cart display
+        function updateCart() {
+            const cartItems = document.getElementById('cart-items');
+            const cartTotal = document.getElementById('cart-total');
+            
+            if (selectedProducts.length === 0) {
+                cartItems.innerHTML = '<p>No items selected</p>';
+                cartTotal.textContent = 'Total: $0.00';
+                return;
+            }
+            
+            cartItems.innerHTML = '';
+            let total = 0;
+            
+            selectedProducts.forEach(product => {
+                const item = document.createElement('div');
+                item.className = 'cart-item';
+                item.innerHTML = `
+                    <span>${product.name}</span>
+                    <span>$${product.price.toFixed(2)}</span>
+                `;
+                cartItems.appendChild(item);
+                total += product.price;
+            });
+            
+            cartTotal.textContent = `Total: $${total.toFixed(2)}`;
+        }
+
+        // FSMC state transitions
+        function selectProduct(index) {
+            if (currentState !== STATES.WAITING) return;
+            
+            const product = products[index];
+            const itemElement = document.querySelectorAll('.item')[index];
+            
+            // Toggle product selection
+            const existingIndex = selectedProducts.findIndex(p => p.name === product.name);
+            if (existingIndex >= 0) {
+                selectedProducts.splice(existingIndex, 1);
+                itemElement.classList.remove('selected');
+            } else {
+                selectedProducts.push({...product});
+                itemElement.classList.add('selected');
+            }
+            
+            updateCart();
+            updateStatus(`${selectedProducts.length} item(s) selected. Click "Checkout" when ready.`);
+        }
+
+        function checkout() {
+            if (currentState !== STATES.WAITING || selectedProducts.length === 0) return;
+            
+            currentState = STATES.COLLECTING;
+            queuedMoney = 0;
+            totalInserted = 0;
+            
+            const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+            updateStatus(`Insert $${totalPrice.toFixed(2)} for your order. Current: $${queuedMoney.toFixed(2)}`);
+            updateStatePanel();
+        }
+
+        function queueMoney(amount) {
+            if (currentState !== STATES.COLLECTING) return;
+            queuedMoney += amount;
+            
+            const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+            updateStatus(`Queued: $${queuedMoney.toFixed(2)}. Need $${totalPrice.toFixed(2)}. Click Submit.`);
+        }
+
+        function submitMoney() {
+            if (currentState !== STATES.COLLECTING) return;
+            totalInserted = queuedMoney;
+            
+            const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+            if (totalInserted >= totalPrice) {
+                currentState = STATES.DISPENSING;
+                updateStatePanel();
+                dispenseProducts();
+            } else {
+                updateStatus(`Inserted: $${totalInserted.toFixed(2)}. Need $${(totalPrice - totalInserted).toFixed(2)} more.`);
+                queuedMoney = 0;
+            }
+        }
+
+        function dispenseProducts() {
+            const productNames = selectedProducts.map(p => p.name).join(', ');
+            updateStatus(`Dispensing ${productNames}...`);
+            
+            setTimeout(() => {
+                const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+                if (totalInserted > totalPrice) {
+                    currentState = STATES.RETURNING_CHANGE;
+                    updateStatePanel();
+                    returnChange();
+                } else {
+                    reset();
+                }
+            }, 1000);
+        }
+
+        function returnChange() {
+            const totalPrice = selectedProducts.reduce((sum, product) => sum + product.price, 0);
+            const change = totalInserted - totalPrice;
+            const productNames = selectedProducts.map(p => p.name).join(', ');
+            
+            updateStatus(`Dispensing ${productNames}. Returning $${change.toFixed(2)} change.`);
+            setTimeout(() => {
+                reset();
+            }, 1000);
+        }
+
+        function reset() {
+            currentState = STATES.WAITING;
+            selectedProducts = [];
+            queuedMoney = 0;
+            totalInserted = 0;
+            
+            // Clear all selected item highlights
+            document.querySelectorAll('.item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            updateStatus('Select products to start');
+            updateCart();
+            updateStatePanel();
+        }
+
+        function restart() {
+            reset();
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // Initialize the game
+        initVendingMachine();
+        updateStatePanel();
+    </script>
+</body>
+</html>

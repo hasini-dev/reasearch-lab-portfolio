@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMOS Cake Fabrication</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif; 
+            text-align: center; 
+            background: #fff0f5; 
+            margin: 0; 
+            padding: 20px;
+        }
+        #game-container { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #canvas-container { 
+            border: 3px dashed #ff9999; 
+            background: #fff; 
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        #controls { 
+            margin: 20px; 
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 5px; 
+            font-size: 16px; 
+            cursor: pointer; 
+            background: #ffcccb; 
+            border: 2px solid #ff9999; 
+            border-radius: 50px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        button:hover { 
+            background: #ffb6c1; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        #status { 
+            font-size: 20px; 
+            margin: 15px; 
+            color: #333;
+            font-weight: bold;
+            background: #ffebee;
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 2px dotted #ff9999;
+        }
+        #explanation { 
+            width: 100%; 
+            max-width: 700px;
+            font-size: 16px; 
+            text-align: left; 
+            background: #f8f8f8; 
+            padding: 20px; 
+            border-radius: 10px;
+            border-left: 5px solid #ff9999;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #d23669;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+        .cake-layer-label {
+            position: absolute;
+            background: rgba(255,255,255,0.8);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <h1>🎂 CMOS Cake Fabrication Simulator 🎂</h1>
+        <div id="status">Step 1: Prepare the Silicon Wafer (Cake Base)</div>
+        <div id="explanation">Welcome to CMOS cake fabrication! In this game, you'll build a delicious cake while learning the complete CMOS fabrication process. Each layer of your cake corresponds to a step in creating computer chips. Let's begin with the foundation - the silicon wafer!</div>
+        <div id="canvas-container"></div>
+        <div id="controls">
+            <button onclick="selectIngredient('Vanilla Sponge')">Vanilla Sponge</button>
+            <button onclick="selectIngredient('Chocolate Cake')">Chocolate Cake</button>
+            <button onclick="selectIngredient('Cheesecake')">Cheesecake</button>
+        </div>
+    </div>
+
+    <script>
+        // Complete CMOS fabrication steps with cake analogies
+        const fabricationSteps = [
+            {
+                name: "Silicon Wafer Preparation",
+                ingredient: "Vanilla Sponge",
+                description: "The vanilla sponge base represents the silicon wafer - the pure, crystalline foundation of all CMOS chips. Just as we start with a flat cake base, chip manufacturing begins with highly polished silicon wafers.",
+                color: [245, 222, 179],
+                height: 40,
+                options: ["Vanilla Sponge", "Chocolate Cake", "Cheesecake"]
+            },
+            {
+                name: "Oxidation",
+                ingredient: "Simple Syrup",
+                description: "Brushing the cake with simple syrup creates a moist layer, just like how silicon wafers are oxidized to create a thin insulating layer of silicon dioxide (SiO₂). This oxide layer protects the silicon and serves as an insulator.",
+                color: [240, 230, 210],
+                height: 5,
+                options: ["Simple Syrup", "Lemon Glaze", "Rum Soak"]
+            },
+            {
+                name: "Photolithography (Masking)",
+                ingredient: "Stencil Pattern",
+                description: "Using a stencil to dust powdered sugar creates patterns, similar to photolithography where light-sensitive photoresist is patterned using masks. This defines where we'll add or remove material in subsequent steps.",
+                color: [255, 255, 255],
+                height: 2,
+                options: ["Stencil Pattern", "Frosting Outline", "Edible Ink"]
+            },
+            {
+                name: "Etching",
+                ingredient: "Carved Sections",
+                description: "Carefully carving out sections of the cake represents etching - removing unwanted material. In chip fabrication, wet or dry etching removes exposed oxide to create openings for doping or deposition.",
+                color: [220, 190, 150],
+                height: -10, // Negative height means we remove material
+                options: ["Carved Sections", "Hollowed Areas", "Removed Layers"]
+            },
+            {
+                name: "Doping (n-type)",
+                ingredient: "Blueberry Filling",
+                description: "Injecting blueberry filling into carved areas represents n-type doping (adding phosphorus or arsenic). These 'extra electrons' create regions that conduct current easily when voltage is applied.",
+                color: [138, 43, 226],
+                height: 15,
+                options: ["Blueberry Filling", "Lemon Curd", "Raspberry Jam"]
+            },
+            {
+                name: "Doping (p-type)",
+                ingredient: "Strawberry Filling",
+                description: "Adding strawberry filling represents p-type doping (adding boron). These 'electron holes' create complementary regions that work with n-type areas to form transistors.",
+                color: [220, 20, 60],
+                height: 15,
+                options: ["Strawberry Filling", "Cherry Compote", "Rhubarb Sauce"]
+            },
+            {
+                name: "Gate Oxide Formation",
+                ingredient: "Thin Frosting Layer",
+                description: "A thin frosting layer acts as the gate oxide - an ultra-thin insulating layer (just 1-2 nm in modern chips!) that controls current flow in transistors. This is one of the most critical steps in CMOS fabrication.",
+                color: [255, 250, 240],
+                height: 3,
+                options: ["Thin Frosting Layer", "Glaze", "Ganache Wash"]
+            },
+            {
+                name: "Polysilicon Deposition",
+                ingredient: "Yellow Sprinkles",
+                description: "Sprinkling yellow sugar represents depositing polysilicon for transistor gates. This conductive material forms the control electrodes that turn transistors on and off.",
+                color: [255, 255, 0],
+                height: 5,
+                options: ["Yellow Sprinkles", "Gold Dust", "Cornflake Crunch"]
+            },
+            {
+                name: "Metal Deposition (Aluminum/Copper)",
+                ingredient: "Silver Pearls",
+                description: "Adding silver candy pearls represents metallization - depositing aluminum or copper interconnects that wire together all the transistors. Modern chips have 10-15 metal layers!",
+                color: [192, 192, 192],
+                height: 8,
+                options: ["Silver Pearls", "Chocolate Shavings", "Hazelnut Crunch"]
+            },
+            {
+                name: "Chemical Mechanical Planarization",
+                ingredient: "Rolled Smooth",
+                description: "Rolling the cake smooth represents CMP - polishing the surface flat between layers. This ensures each new layer starts perfectly flat, critical for modern multi-layer chips.",
+                color: [0, 0, 0, 0], // Transparent
+                height: -5,
+                options: ["Rolled Smooth", "Sanded Flat", "Leveled Off"]
+            },
+            {
+                name: "Passivation Layer",
+                ingredient: "Glaze Coating",
+                description: "The final glaze represents the passivation layer - a protective coating (usually silicon nitride) that seals the chip from moisture and contaminants.",
+                color: [240, 248, 255],
+                height: 4,
+                options: ["Glaze Coating", "Chocolate Shell", "Sugar Glass"]
+            },
+            {
+                name: "Packaging",
+                ingredient: "Cake Box",
+                description: "Placing the finished cake in a box represents chip packaging - protecting the delicate silicon die and connecting it to the outside world with pins or solder balls.",
+                color: [210, 180, 140],
+                height: 30,
+                options: ["Cake Box", "Gift Wrap", "Display Stand"]
+            }
+        ];
+
+        let currentStep = 0;
+        let cakeLayers = [];
+        let selectedLayer = null;
+        let cakeWidth = 300;
+        let cakeX, cakeY;
+        let layerLabels = [];
+
+        function setup() {
+            let canvas = createCanvas(700, 500);
+            canvas.parent('canvas-container');
+            cakeX = width/2 - cakeWidth/2;
+            cakeY = height - 50;
+            
+            // Add initial cake stand
+            cakeLayers.push({
+                name: "Cake Stand",
+                color: [200, 200, 200],
+                height: 20,
+                permanent: true
+            });
+        }
+
+        function draw() {
+            background(255);
+            drawCakeStand();
+            drawCakeLayers();
+            drawSelectedLayer();
+            drawCompletionMessage();
+            drawLayerLabels();
+        }
+
+        function drawCakeStand() {
+            // Cake stand base
+            fill(220);
+            rect(0, height - 30, width, 30);
+            
+            // Pedestal
+            fill(180);
+            let pedestalWidth = cakeWidth + 40;
+            rect(width/2 - pedestalWidth/2, height - 80, pedestalWidth, 30);
+            ellipse(width/2, height - 80, pedestalWidth, 40);
+        }
+
+        function drawCakeLayers() {
+            let y = cakeY;
+            layerLabels = []; // Reset labels
+            
+            for (let i = cakeLayers.length - 1; i >= 0; i--) {
+                let layer = cakeLayers[i];
+                fill(layer.color);
+                rect(cakeX, y - layer.height, cakeWidth, layer.height);
+                
+                // Add decorative elements based on layer type
+                addLayerDetails(cakeX, y - layer.height, cakeWidth, layer.height, layer.name);
+                
+                // Store label position
+                if (!layer.permanent) {
+                    layerLabels.push({
+                        text: layer.name,
+                        x: cakeX + cakeWidth/2,
+                        y: y - layer.height/2
+                    });
+                }
+                
+                y -= layer.height;
+            }
+        }
+
+        function addLayerDetails(x, y, w, h, name) {
+            push();
+            if (name.includes("Vanilla Sponge")) {
+                // Add sponge texture
+                for (let i = 0; i < 50; i++) {
+                    let px = random(x, x + w);
+                    let py = random(y, y + h);
+                    let s = random(2, 5);
+                    fill(230, 220, 190);
+                    ellipse(px, py, s, s);
+                }
+            } 
+            else if (name.includes("Simple Syrup")) {
+                // Add glossy effect
+                fill(255, 255, 255, 100);
+                rect(x + 10, y + 2, w - 20, h - 4);
+            }
+            else if (name.includes("Stencil Pattern")) {
+                // Add circuit-like pattern
+                stroke(200);
+                strokeWeight(1);
+                noFill();
+                for (let i = 0; i < 5; i++) {
+                    let offset = i * 15;
+                    line(x + offset, y, x + offset, y + h);
+                    line(x, y + offset, x + w, y + offset);
+                }
+            }
+            else if (name.includes("Blueberry") || name.includes("Strawberry")) {
+                // Add fruit pieces
+                for (let i = 0; i < 30; i++) {
+                    let px = random(x, x + w);
+                    let py = random(y, y + h);
+                    let s = random(3, 8);
+                    if (name.includes("Blueberry")) {
+                        fill(75, 0, 130);
+                    } else {
+                        fill(220, 20, 60);
+                    }
+                    ellipse(px, py, s, s);
+                }
+            }
+            else if (name.includes("Yellow Sprinkles")) {
+                // Add sprinkles
+                for (let i = 0; i < 100; i++) {
+                    let px = random(x, x + w);
+                    let py = random(y, y + h);
+                    let s = random(1, 3);
+                    fill(255, 255, 0);
+                    rect(px, py, s, s*2);
+                }
+            }
+            else if (name.includes("Silver Pearls")) {
+                // Add metal balls
+                for (let i = 0; i < 40; i++) {
+                    let px = random(x, x + w);
+                    let py = random(y, y + h);
+                    let s = random(3, 6);
+                    fill(192, 192, 192);
+                    ellipse(px, py, s, s);
+                    fill(255, 255, 255, 150);
+                    ellipse(px - s/4, py - s/4, s/3, s/3);
+                }
+            }
+            pop();
+        }
+
+        function drawSelectedLayer() {
+            if (selectedLayer) {
+                fill(selectedLayer.color);
+                let layerHeight = Math.abs(selectedLayer.height);
+                let yOffset = mouseY < height/2 ? -layerHeight : layerHeight;
+                rect(mouseX - 100, mouseY - layerHeight/2, 200, layerHeight);
+                
+                // Add shadow
+                fill(0, 0, 0, 50);
+                noStroke();
+                ellipse(mouseX, mouseY + layerHeight/2 + 5, 180, 10);
+            }
+        }
+
+        function drawCompletionMessage() {
+            if (currentStep >= fabricationSteps.length) {
+                fill(0);
+                textSize(28);
+                textAlign(CENTER);
+                textStyle(BOLD);
+                text("🎉 CMOS Cake Complete! 🎉", width/2, 60);
+                
+                textSize(18);
+                text("You've successfully fabricated a CMOS chip cake!", width/2, 90);
+                text("Now you can slice and package it for delivery!", width/2, 120);
+            }
+        }
+
+        function drawLayerLabels() {
+            for (let label of layerLabels) {
+                push();
+                fill(255, 255, 255, 200);
+                stroke(200);
+                strokeWeight(1);
+                rect(label.x - 60, label.y - 15, 120, 30, 15);
+                fill(0);
+                noStroke();
+                textSize(12);
+                textAlign(CENTER, CENTER);
+                text(label.text, label.x, label.y);
+                pop();
+            }
+        }
+
+        function selectIngredient(ingredient) {
+            let step = fabricationSteps[currentStep];
+            if (ingredient === step.ingredient) {
+                selectedLayer = { 
+                    color: step.color, 
+                    height: step.height, 
+                    name: step.name,
+                    ingredient: step.ingredient
+                };
+                document.getElementById("status").innerText = `Step ${currentStep + 1}: Place the ${step.ingredient} for ${step.name}`;
+            } else {
+                document.getElementById("status").innerText = `Oops! Try ${step.ingredient} for ${step.name}.`;
+            }
+        }
+
+        function mousePressed() {
+            if (!selectedLayer) return;
+            
+            // Check if clicking near the cake area
+            if (mouseX > cakeX - 50 && mouseX < cakeX + cakeWidth + 50 && 
+                mouseY > 100 && mouseY < height - 30) {
+                
+                // For material removal steps (negative height)
+                if (selectedLayer.height < 0) {
+                    // Check if we have enough material to remove
+                    let totalHeight = cakeLayers.reduce((sum, layer) => sum + (layer.permanent ? 0 : layer.height), 0);
+                    if (totalHeight + selectedLayer.height < 0) {
+                        document.getElementById("status").innerText = `Not enough material to remove! Add more layers first.`;
+                        return;
+                    }
+                }
+                
+                cakeLayers.push(selectedLayer);
+                document.getElementById("status").innerText = `Step ${currentStep + 1} Complete: ${selectedLayer.name}`;
+                document.getElementById("explanation").innerText = fabricationSteps[currentStep].description;
+                
+                selectedLayer = null;
+                currentStep++;
+                
+                if (currentStep < fabricationSteps.length) {
+                    updateControls();
+                    document.getElementById("status").innerText = `Step ${currentStep + 1}: Choose the ingredient for ${fabricationSteps[currentStep].name}`;
+                    document.getElementById("explanation").innerText = `Next: ${fabricationSteps[currentStep].description.split('.')[0]}.`;
+                } else {
+                    document.getElementById("explanation").innerText = 
+                        "Congratulations! You've completed all CMOS fabrication steps!\n\n" +
+                        "From wafer preparation to final packaging, you've built a complete CMOS chip - in cake form!\n\n" +
+                        "In real chip fabrication, these steps are repeated many times to create complex integrated circuits with billions of transistors.";
+                    document.getElementById("controls").innerHTML = 
+                        `<button onclick="location.reload()" style="background: #d23669; color: white;">Bake Another Cake!</button>`;
+                }
+            }
+        }
+
+        function updateControls() {
+            let step = fabricationSteps[currentStep];
+            let options = [...step.options];
+            
+            // Ensure the correct ingredient is included
+            if (!options.includes(step.ingredient)) {
+                options[0] = step.ingredient;
+            }
+            
+            // Shuffle options
+            for (let i = options.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [options[i], options[j]] = [options[j], options[i]];
+            }
+            
+            document.getElementById("controls").innerHTML = 
+                options.map(opt => 
+                    `<button onclick="selectIngredient('${opt}')">${opt}</button>`
+                ).join('');
+        }
+
+        // Make functions globally accessible
+        window.selectIngredient = selectIngredient;
+        window.setup = setup;
+        window.draw = draw;
+        window.mousePressed = mousePressed;
+    </script>
+</body>
+</html>

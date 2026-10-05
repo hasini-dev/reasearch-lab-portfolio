@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CircuitVerse: Neon Traffic Control</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 2rem;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      color: #00ffe1;
+      margin-bottom: 1rem;
+    }
+
+    .section {
+      margin-top: 2rem;
+      background: #1a1a1a;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #00ffe1aa;
+    }
+
+    label {
+      display: block;
+      margin: 0.5rem 0 0.2rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      border: none;
+      border-radius: 8px;
+      background: #2b2b2b;
+      color: #fff;
+    }
+
+    button {
+      background-color: #00ffe1;
+      color: #000;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+
+    button:hover {
+      background-color: #00ccb5;
+    }
+
+    #output {
+      margin-top: 1rem;
+      background-color: #111;
+      padding: 1rem;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      border: 1px solid #00ffe1;
+    }
+
+    #codexModal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 3rem;
+      overflow-y: auto;
+      z-index: 1000;
+    }
+
+    #closeCodex {
+      background: #ff4444;
+      color: white;
+      float: right;
+    }
+
+    /* New styles for truth table and K-map */
+    .truth-table {
+      margin-top: 2rem;
+      display: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      border: 1px solid #00ffe1;
+      padding: 0.5rem;
+      text-align: center;
+    }
+
+    th {
+      background-color: #003333;
+    }
+
+    .k-map {
+      margin-top: 2rem;
+      display: none;
+      position: relative;
+    }
+
+    .k-map-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .k-map-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      margin: 1rem auto;
+      position: relative;
+    }
+
+    .k-map-grid-4var {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+      margin: 1rem auto;
+      position: relative;
+    }
+
+    .k-map-cell {
+      border: 1px solid #00ffe1;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      background-color: #1a1a1a;
+      min-width: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .k-map-cell:hover {
+      background-color: #2b2b2b;
+    }
+
+    .k-map-label {
+      font-weight: bold;
+      background-color: #003333;
+    }
+
+    .correct {
+      background-color: #00aa00 !important;
+    }
+
+    .k-map-feedback {
+      text-align: center;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    .correct-feedback {
+      color: #00ff00;
+    }
+
+    .incorrect-feedback {
+      color: #ff0000;
+    }
+
+    .k-map-buttons {
+      margin-top: 1rem;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+    }
+
+    .next-button {
+      background-color: #ff9900;
+      margin-top: 2rem;
+    }
+
+    .next-button:hover {
+      background-color: #cc7a00;
+    }
+
+    /* Grouping styles */
+    .k-map-group {
+      position: absolute;
+      border: 3px solid #ff00ff;
+      border-radius: 5px;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .group-expression {
+      position: absolute;
+      color: #ff00ff;
+      font-weight: bold;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 2px 5px;
+      border-radius: 3px;
+      z-index: 3;
+    }
+
+    .final-expression {
+      margin-top: 1rem;
+      padding: 0.5rem;
+      background-color: #003333;
+      border-radius: 5px;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    /* NEW STYLES FOR CHATBOT AND TUTORIAL */
+    #chatbotContainer {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0, 255, 225, 0.5);
+      z-index: 100;
+      display: none;
+    }
+
+    #chatbotHeader {
+      background: #00ffe1;
+      color: #000;
+      padding: 10px;
+      border-radius: 10px 10px 0 0;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #chatbotBody {
+      height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    #chatbotInput {
+      width: calc(100% - 60px);
+      padding: 8px;
+      border: none;
+      background: #2b2b2b;
+      color: #fff;
+      border-radius: 5px 0 0 5px;
+    }
+
+    #chatbotSend {
+      width: 60px;
+      padding: 8px;
+      background: #00ffe1;
+      border: none;
+      border-radius: 0 5px 5px 0;
+      cursor: pointer;
+    }
+
+    .chatbotMessage {
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      max-width: 80%;
+    }
+
+    .userMessage {
+      background: #00ffe1;
+      color: #000;
+      margin-left: auto;
+    }
+
+    .botMessage {
+      background: #2b2b2b;
+      margin-right: auto;
+    }
+
+    #chatbotToggle {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #00ffe1;
+      color: #000;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 255, 225, 0.5);
+      z-index: 99;
+    }
+
+    /* Tutorial cursor styles */
+    .tutorial-cursor {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background-color: #ff00ff;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: bounce 0.5s infinite alternate;
+      display: none;
+    }
+
+    .tutorial-hint {
+      position: absolute;
+      background-color: #1a1a1a;
+      color: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #00ffe1;
+      max-width: 200px;
+      z-index: 1001;
+      display: none;
+    }
+
+    @keyframes bounce {
+      from { transform: translateY(0); }
+      to { transform: translateY(-10px); }
+    }
+
+    #tutorialOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 999;
+      display: none;
+    }
+
+    #tutorialDialog {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      border: 2px solid #00ffe1;
+      z-index: 1000;
+      max-width: 500px;
+      display: none;
+    }
+
+    #tutorialDialog h3 {
+      color: #00ffe1;
+      margin-top: 0;
+    }
+
+    #tutorialDialog button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>CircuitVerse: Neon Traffic Control</h1>
+
+    <div class="section">
+      <h2 id="scenarioTitle">Scenario:</h2>
+      <p id="scenarioText"></p>
+
+      <label for="userBoolean">Your Boolean Expression:</label>
+      <input type="text" id="userBoolean" placeholder="e.g., A*~B + C" />
+      <button onclick="checkBoolean()">Check</button>
+      <button onclick="showBooleanAnswer()">Show Answer</button>
+
+      <div id="booleanFeedback"></div>
+
+      <label for="userSimplified">Simplified Expression:</label>
+      <input type="text" id="userSimplified" placeholder="e.g., A̅ + C" />
+      <button onclick="checkSimplified()">Check Simplification</button>
+      <button onclick="showSimplifiedAnswer()">Show Simplified Answer</button>
+
+      <div id="simplifiedFeedback"></div>
+
+      <button onclick="showCodex()">Open Hacker's Codex</button>
+
+      <!-- Truth Table Section -->
+      <div id="truthTableSection" class="truth-table">
+        <h3>Truth Table</h3>
+        <table id="truthTable">
+          <thead id="truthTableHeader">
+            <!-- Will be populated by JavaScript -->
+          </thead>
+          <tbody id="truthTableBody">
+            <!-- Will be populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 3-Variable K-Map Section -->
+      <div id="kmap3Section" class="k-map">
+        <h3>3-Variable Karnaugh Map (K-Map)</h3>
+        <p>Click cells to toggle between 0, 1, and X (don't care)</p>
+        <div class="k-map-container">
+          <div class="k-map-grid" id="kmap3Grid">
+            <div class="k-map-label"></div>
+            <div class="k-map-label">B'C'</div>
+            <div class="k-map-label">B'C</div>
+            <div class="k-map-label">BC</div>
+            <div class="k-map-label">BC'</div>
+            <div class="k-map-label">A'</div>
+            <div class="k-map-cell" data-pos="0,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,2" data-value="0">0</div>
+            <div class="k-map-label">A</div>
+            <div class="k-map-cell" data-pos="1,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,2" data-value="0">0</div>
+          </div>
+          <div class="k-map-buttons">
+            <button onclick="checkKMap()">Check K-Map</button>
+            <button onclick="showKMapAnswer()">Show Answer</button>
+            <button onclick="resetKMap()">Reset</button>
+          </div>
+          <div id="kmapFeedback" class="k-map-feedback"></div>
+          <div id="kmapGroups3" style="position: relative; width: 100%; height: 0;"></div>
+          <div id="finalExpression3" class="final-expression"></div>
+        </div>
+      </div>
+
+      <!-- 4-Variable K-Map Section -->
+      <div id="kmap4Section" class="k-map">
+        <h3>4-Variable Karnaugh Map (K-Map)</h3>
+        <p>Click cells to toggle between 0, 1, and X (don't care)</p>
+        <div class="k-map-container">
+          <div class="k-map-grid-4var" id="kmap4Grid">
+            <div class="k-map-label"></div>
+            <div class="k-map-label">C'D'</div>
+            <div class="k-map-label">C'D</div>
+            <div class="k-map-label">CD</div>
+            <div class="k-map-label">CD'</div>
+            <div class="k-map-label">A'B'</div>
+            <div class="k-map-cell" data-pos="0,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="0,2" data-value="0">0</div>
+            <div class="k-map-label">A'B</div>
+            <div class="k-map-cell" data-pos="1,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="1,2" data-value="0">0</div>
+            <div class="k-map-label">AB</div>
+            <div class="k-map-cell" data-pos="3,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="3,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="3,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="3,2" data-value="0">0</div>
+            <div class="k-map-label">AB'</div>
+            <div class="k-map-cell" data-pos="2,0" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="2,1" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="2,3" data-value="0">0</div>
+            <div class="k-map-cell" data-pos="2,2" data-value="0">0</div>
+          </div>
+          <div class="k-map-buttons">
+            <button onclick="checkKMap()">Check K-Map</button>
+            <button onclick="showKMapAnswer()">Show Answer</button>
+            <button onclick="resetKMap()">Reset</button>
+          </div>
+          <div id="kmapFeedback4" class="k-map-feedback"></div>
+          <div id="kmapGroups4" style="position: relative; width: 100%; height: 0;"></div>
+          <div id="finalExpression4" class="final-expression"></div>
+        </div>
+      </div>
+
+      <button id="nextButton" class="next-button" onclick="nextProblem()" style="display: none;">Next Challenge →</button>
+    </div>
+
+    <div id="codexModal">
+      <div class="content">
+        <button id="closeCodex" onclick="hideCodex()">Close</button>
+        <h2>🧠 Hacker's Codex</h2>
+        <p><strong>Boolean Algebra Basics:</strong></p>
+        <ul>
+          <li>A + A = A</li>
+          <li>A * A = A</li>
+          <li>A + 1 = 1</li>
+          <li>A * 0 = 0</li>
+          <li>A + A' = 1</li>
+          <li>A * A' = 0</li>
+        </ul>
+        <p><strong>K-Map Tips:</strong></p>
+        <ul>
+          <li>Group 1s into rectangles of 1, 2, 4, or 8</li>
+          <li>Only powers of two are allowed in a group</li>
+          <li>Minimize the number of groups</li>
+          <li>Use don't-cares (X) to help reduce complexity</li>
+          <li>Note the Gray code ordering (00, 01, 11, 10)</li>
+        </ul>
+        <p><strong>Example:</strong><br>Expression: A*~B + C<br>Simplified: A̅ + C</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEW ELEMENTS FOR CHATBOT AND TUTORIAL -->
+  <div id="chatbotToggle">?</div>
+  <div id="chatbotContainer">
+    <div id="chatbotHeader">
+      <span>CircuitVerse Assistant</span>
+      <span onclick="toggleChatbot()">×</span>
+    </div>
+    <div id="chatbotBody"></div>
+    <div style="display: flex; padding: 10px;">
+      <input type="text" id="chatbotInput" placeholder="Ask about Boolean algebra or K-maps..." />
+      <button id="chatbotSend" onclick="sendChatbotMessage()">Send</button>
+    </div>
+  </div>
+
+  <div class="tutorial-cursor" id="tutorialCursor"></div>
+  <div class="tutorial-hint" id="tutorialHint"></div>
+  <div id="tutorialOverlay"></div>
+  <div id="tutorialDialog">
+    <h3>Tutorial Hint</h3>
+    <p id="tutorialDialogText">Would you like a hint on what to do next?</p>
+    <button onclick="continueTutorial()">Yes, show me</button>
+    <button onclick="skipTutorial()">No thanks</button>
+  </div>
+
+  <script>
+    // Problem database
+    const problems = [
+      {
+        title: "Traffic Light Controller",
+        scenario: "Green light ON if A (north traffic) AND NOT B (south traffic), OR C (emergency).",
+        correctBoolean: "A*~B + C",
+        simplifiedExpression: "A̅ + C",
+        variables: ["A", "B", "C"],
+        kmap: {
+          "0,0": "0", "0,1": "1", "0,2": "1", "0,3": "1",
+          "1,0": "0", "1,1": "1", "1,2": "0", "1,3": "1"
+        },
+        groups: [
+          {
+            cells: ["0,1", "0,2", "0,3"],
+            expression: "~A"
+          },
+          {
+            cells: ["0,1", "0,3", "1,1", "1,3"],
+            expression: "C"
+          }
+        ]
+      },
+      {
+        title: "Security System",
+        scenario: "Alarm sounds if (Window sensor A OR door sensor B) AND motion detected C, OR manual override D.",
+        correctBoolean: "(A + B)*C + D",
+        simplifiedExpression: "AC + BC + D",
+        variables: ["A", "B", "C", "D"],
+        kmap: {
+          "0,0": "0", "0,1": "0", "0,2": "0", "0,3": "0",
+          "1,0": "0", "1,1": "1", "1,2": "1", "1,3": "1",
+          "2,0": "1", "2,1": "1", "2,2": "1", "2,3": "1",
+          "3,0": "0", "3,1": "1", "3,2": "1", "3,3": "1"
+        },
+        groups: [
+          {
+            cells: ["1,1", "1,2", "1,3"],
+            expression: "~ABC"
+          },
+          {
+            cells: ["1,1", "3,1", "1,2", "3,2", "1,3", "3,3"],
+            expression: "BC"
+          },
+          {
+            cells: ["2,0", "2,1", "2,2", "2,3"],
+            expression: "ABD"
+          }
+        ]
+      },
+      {
+        title: "Elevator Control",
+        scenario: "Door opens if (Floor request A AND no obstruction B) OR emergency stop C.",
+        correctBoolean: "A*B + C",
+        simplifiedExpression: "AB + C",
+        variables: ["A", "B", "C"],
+        kmap: {
+          "0,0": "0", "0,1": "0", "0,2": "0", "0,3": "0",
+          "1,0": "0", "1,1": "1", "1,2": "0", "1,3": "1"
+        },
+        groups: [
+          {
+            cells: ["1,1"],
+            expression: "AB~C"
+          },
+          {
+            cells: ["1,1", "1,3"],
+            expression: "AB + C"
+          }
+        ]
+      },
+      {
+        title: "Smart Thermostat",
+        scenario: "AC turns on if (Temp high A AND not in eco mode B) OR override C.",
+        correctBoolean: "A*~B + C",
+        simplifiedExpression: "A̅ + C",
+        variables: ["A", "B", "C"],
+        kmap: {
+          "0,0": "0", "0,1": "1", "0,2": "0", "0,3": "1",
+          "1,0": "0", "1,1": "1", "1,2": "0", "1,3": "1"
+        },
+        groups: [
+          {
+            cells: ["0,1", "0,3"],
+            expression: "~A"
+          },
+          {
+            cells: ["0,1", "0,3", "1,1", "1,3"],
+            expression: "C"
+          }
+        ]
+      },
+      {
+        title: "Parking System",
+        scenario: "Gate opens if (Valid ticket A AND space available B) OR VIP pass C.",
+        correctBoolean: "A*B + C",
+        simplifiedExpression: "AB + C",
+        variables: ["A", "B", "C"],
+        kmap: {
+          "0,0": "0", "0,1": "0", "0,2": "0", "0,3": "0",
+          "1,0": "0", "1,1": "1", "1,2": "0", "1,3": "1"
+        },
+        groups: [
+          {
+            cells: ["1,1"],
+            expression: "AB~C"
+          },
+          {
+            cells: ["1,1", "1,3"],
+            expression: "AB + C"
+          }
+        ]
+      }
+    ];
+
+    let currentProblem = 0;
+    let usedProblems = [];
+    let booleanCorrect = false;
+    let inactivityTimer;
+    let currentTutorialStep = 0;
+    const tutorialSteps = [
+      {
+        element: "#userBoolean",
+        hint: "Start by entering the Boolean expression here based on the scenario.",
+        dialog: "The first step is to convert the scenario description into a Boolean expression. Look for keywords like AND (*), OR (+), and NOT (~)."
+      },
+      {
+        element: "button[onclick='checkBoolean()']",
+        hint: "Click this button to check your answer.",
+        dialog: "After entering your Boolean expression, click this button to verify if it's correct."
+      },
+      {
+        element: "#userSimplified",
+        hint: "Now try to simplify your expression and enter it here.",
+        dialog: "Boolean expressions can often be simplified using algebraic rules or K-maps. Try to find a simpler equivalent expression."
+      },
+      {
+        element: "#truthTableSection",
+        hint: "Examine the truth table to understand the expression's behavior.",
+        dialog: "The truth table shows all possible input combinations and their corresponding outputs. This can help verify your expression."
+      },
+      {
+        element: ".k-map-cell",
+        hint: "Fill in the K-map based on the truth table values.",
+        dialog: "K-maps help visualize and simplify Boolean expressions. Click cells to toggle between 0, 1, and X (don't care)."
+      },
+      {
+        element: "button[onclick='checkKMap()']",
+        hint: "Check your K-map when you're done.",
+        dialog: "Once you've filled the K-map, click this button to check your solution and see the simplified expression."
+      }
+    ];
+
+    // Initialize with first problem
+    window.onload = function() {
+      loadProblem(currentProblem);
+      setupKMapCells();
+      startInactivityTimer();
+      addChatbotWelcomeMessage();
+      
+      // Add event listeners to reset inactivity timer
+      document.addEventListener('mousemove', resetInactivityTimer);
+      document.addEventListener('keypress', resetInactivityTimer);
+      document.addEventListener('click', resetInactivityTimer);
+    };
+
+    function setupKMapCells() {
+      const kmapCells = document.querySelectorAll('.k-map-cell');
+      
+      kmapCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+          const currentValue = this.getAttribute('data-value');
+          let newValue;
+          
+          if (currentValue === "0") {
+            newValue = "1";
+            this.textContent = "1";
+          } else if (currentValue === "1") {
+            newValue = "X";
+            this.textContent = "X";
+          } else {
+            newValue = "0";
+            this.textContent = "0";
+          }
+          
+          this.setAttribute('data-value', newValue);
+          this.classList.remove('correct');
+        });
+      });
+    }
+
+    function loadProblem(index) {
+      const problem = problems[index];
+      document.getElementById("scenarioTitle").textContent = problem.title + ":";
+      document.getElementById("scenarioText").textContent = problem.scenario;
+      document.getElementById("userBoolean").value = "";
+      document.getElementById("userSimplified").value = "";
+      document.getElementById("booleanFeedback").textContent = "";
+      document.getElementById("simplifiedFeedback").textContent = "";
+      document.getElementById("truthTableSection").style.display = "none";
+      document.getElementById("kmap3Section").style.display = "none";
+      document.getElementById("kmap4Section").style.display = "none";
+      document.getElementById("nextButton").style.display = "none";
+      resetKMap();
+      booleanCorrect = false;
+      currentTutorialStep = 0;
+    }
+
+    function checkBoolean() {
+      const problem = problems[currentProblem];
+      const userExpr = document.getElementById("userBoolean").value.trim();
+      const feedback = document.getElementById("booleanFeedback");
+      
+      if (userExpr === problem.correctBoolean) {
+        feedback.innerHTML = "✅ Correct Boolean expression!";
+        booleanCorrect = true;
+        showTruthTable();
+        // Show the appropriate K-map based on number of variables
+        if (problem.variables.length === 3) {
+          document.getElementById("kmap3Section").style.display = "block";
+        } else if (problem.variables.length === 4) {
+          document.getElementById("kmap4Section").style.display = "block";
+        }
+        document.getElementById("nextButton").style.display = "block";
+      } else {
+        feedback.innerHTML = "❌ Try again.";
+        booleanCorrect = false;
+      }
+    }
+
+    function showBooleanAnswer() {
+      const problem = problems[currentProblem];
+      document.getElementById("booleanFeedback").textContent = `Answer: ${problem.correctBoolean}`;
+    }
+
+    function checkSimplified() {
+      const problem = problems[currentProblem];
+      const userSimpl = document.getElementById("userSimplified").value.trim();
+      const feedback = document.getElementById("simplifiedFeedback");
+      feedback.innerHTML = userSimpl === problem.simplifiedExpression ? "✅ Correct simplification!" : "❌ Try again.";
+    }
+
+    function showSimplifiedAnswer() {
+      const problem = problems[currentProblem];
+      document.getElementById("simplifiedFeedback").textContent = `Answer: ${problem.simplifiedExpression}`;
+    }
+
+    function showCodex() {
+      document.getElementById("codexModal").style.display = "block";
+    }
+
+    function hideCodex() {
+      document.getElementById("codexModal").style.display = "none";
+    }
+
+    function showTruthTable() {
+      const problem = problems[currentProblem];
+      const truthTable = document.getElementById("truthTable");
+      const truthTableHeader = document.getElementById("truthTableHeader");
+      const truthTableBody = document.getElementById("truthTableBody");
+      
+      // Clear previous content
+      truthTableHeader.innerHTML = "";
+      truthTableBody.innerHTML = "";
+      
+      // Create header row based on variables
+      const headerRow = document.createElement("tr");
+      problem.variables.forEach(variable => {
+        const th = document.createElement("th");
+        th.textContent = variable;
+        headerRow.appendChild(th);
+      });
+      const outputTh = document.createElement("th");
+      outputTh.textContent = "Output";
+      headerRow.appendChild(outputTh);
+      truthTableHeader.appendChild(headerRow);
+      
+      // Generate all possible combinations
+      const numVariables = problem.variables.length;
+      const numCombinations = Math.pow(2, numVariables);
+      
+      for (let i = 0; i < numCombinations; i++) {
+        const row = document.createElement("tr");
+        const values = [];
+        
+        // Convert to binary and pad with zeros
+        let binary = i.toString(2).padStart(numVariables, '0');
+        
+        // Add each variable value to the row
+        for (let j = 0; j < numVariables; j++) {
+          const td = document.createElement("td");
+          td.textContent = binary[j];
+          row.appendChild(td);
+          values.push(parseInt(binary[j]));
+        }
+        
+        // Calculate output based on the expression
+        const output = evalBooleanExpression(problem.correctBoolean, ...values);
+        const outputTd = document.createElement("td");
+        outputTd.textContent = output;
+        row.appendChild(outputTd);
+        
+        truthTableBody.appendChild(row);
+      }
+      
+      document.getElementById("truthTableSection").style.display = "block";
+    }
+
+    function evalBooleanExpression(expr, ...values) {
+      // Replace variables with their values
+      const variables = problems[currentProblem].variables;
+      for (let i = 0; i < variables.length; i++) {
+        expr = expr.replace(new RegExp(variables[i], 'g'), values[i]);
+      }
+      
+      // Replace operators with JavaScript equivalents
+      expr = expr.replace(/\*/g, '&&');
+      expr = expr.replace(/\+/g, '||');
+      expr = expr.replace(/~/g, '!');
+      
+      // Evaluate the expression
+      try {
+        return eval(expr) ? 1 : 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function checkKMap() {
+      const problem = problems[currentProblem];
+      let kmapCells, feedback, groupsContainer, finalExpression;
+      
+      if (problem.variables.length === 3) {
+        kmapCells = document.querySelectorAll('#kmap3Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback");
+        groupsContainer = document.getElementById("kmapGroups3");
+        finalExpression = document.getElementById("finalExpression3");
+      } else {
+        kmapCells = document.querySelectorAll('#kmap4Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback4");
+        groupsContainer = document.getElementById("kmapGroups4");
+        finalExpression = document.getElementById("finalExpression4");
+      }
+      
+      let allCorrect = true;
+      
+      kmapCells.forEach(cell => {
+        const pos = cell.getAttribute('data-pos');
+        const userValue = cell.getAttribute('data-value');
+        const correctValue = problem.kmap[pos];
+        
+        if (userValue !== correctValue && userValue !== "X") {
+          allCorrect = false;
+        }
+      });
+      
+      if (allCorrect) {
+        feedback.textContent = "✅ Correct K-Map! Great job!";
+        feedback.className = "k-map-feedback correct-feedback";
+        
+        // Highlight correct cells
+        kmapCells.forEach(cell => {
+          const pos = cell.getAttribute('data-pos');
+          const correctValue = problem.kmap[pos];
+          if (cell.getAttribute('data-value') === correctValue) {
+            cell.classList.add('correct');
+          }
+        });
+        
+        // Show groupings and expressions
+        showKMapGroups(problem, groupsContainer, finalExpression);
+      } else {
+        feedback.textContent = "❌ Incorrect K-Map. Try again!";
+        feedback.className = "k-map-feedback incorrect-feedback";
+      }
+    }
+
+    function showKMapGroups(problem, groupsContainer, finalExpression) {
+      // Clear previous groups
+      groupsContainer.innerHTML = "";
+      
+      // Get the K-map grid element
+      const kmapGrid = problem.variables.length === 3 ? 
+        document.getElementById("kmap3Grid") : 
+        document.getElementById("kmap4Grid");
+      
+      // Get grid position
+      const gridRect = kmapGrid.getBoundingClientRect();
+      const containerRect = groupsContainer.getBoundingClientRect();
+      const offsetX = gridRect.left - containerRect.left;
+      const offsetY = gridRect.top - containerRect.top;
+      
+      // Get all cell positions
+      const cellPositions = {};
+      const cells = kmapGrid.querySelectorAll('.k-map-cell');
+      cells.forEach(cell => {
+        const pos = cell.getAttribute('data-pos');
+        const rect = cell.getBoundingClientRect();
+        
+        cellPositions[pos] = {
+          left: rect.left - gridRect.left + offsetX,
+          top: rect.top - gridRect.top + offsetY,
+          right: rect.right - gridRect.left + offsetX,
+          bottom: rect.bottom - gridRect.top + offsetY,
+          width: rect.width,
+          height: rect.height
+        };
+      });
+      
+      // Draw each group
+      let finalExpr = "";
+      problem.groups.forEach((group, index) => {
+        // Find min/max coordinates for the group
+        let minLeft = Infinity, minTop = Infinity;
+        let maxRight = -Infinity, maxBottom = -Infinity;
+        
+        group.cells.forEach(pos => {
+          const cell = cellPositions[pos];
+          if (cell) {
+            minLeft = Math.min(minLeft, cell.left);
+            minTop = Math.min(minTop, cell.top);
+            maxRight = Math.max(maxRight, cell.right);
+            maxBottom = Math.max(maxBottom, cell.bottom);
+          }
+        });
+        
+        // Create group element
+        const groupElement = document.createElement('div');
+        groupElement.className = 'k-map-group';
+        groupElement.style.left = `${minLeft}px`;
+        groupElement.style.top = `${minTop}px`;
+        groupElement.style.width = `${maxRight - minLeft}px`;
+        groupElement.style.height = `${maxBottom - minTop}px`;
+        
+        // Create expression label
+        const exprElement = document.createElement('div');
+        exprElement.className = 'group-expression';
+        exprElement.textContent = group.expression;
+        exprElement.style.left = `${minLeft + 5}px`;
+        exprElement.style.top = `${minTop - 20}px`;
+        
+        groupsContainer.appendChild(groupElement);
+        groupsContainer.appendChild(exprElement);
+        
+        // Build final expression
+        if (index > 0) finalExpr += " + ";
+        finalExpr += group.expression;
+      });
+      
+      // Show final expression
+      finalExpression.textContent = `Final Simplified Expression: ${finalExpr}`;
+    }
+
+    function showKMapAnswer() {
+      const problem = problems[currentProblem];
+      let kmapCells, feedback, groupsContainer, finalExpression;
+      
+      if (problem.variables.length === 3) {
+        kmapCells = document.querySelectorAll('#kmap3Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback");
+        groupsContainer = document.getElementById("kmapGroups3");
+        finalExpression = document.getElementById("finalExpression3");
+      } else {
+        kmapCells = document.querySelectorAll('#kmap4Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback4");
+        groupsContainer = document.getElementById("kmapGroups4");
+        finalExpression = document.getElementById("finalExpression4");
+      }
+      
+      kmapCells.forEach(cell => {
+        const pos = cell.getAttribute('data-pos');
+        const correctValue = problem.kmap[pos];
+        
+        cell.setAttribute('data-value', correctValue);
+        cell.textContent = correctValue;
+        cell.classList.add('correct');
+      });
+      
+      feedback.textContent = "✅ Here's the correct K-Map solution!";
+      feedback.className = "k-map-feedback correct-feedback";
+      
+      // Show groupings and expressions
+      showKMapGroups(problem, groupsContainer, finalExpression);
+    }
+
+    function resetKMap() {
+      const problem = problems[currentProblem];
+      let kmapCells, feedback, groupsContainer, finalExpression;
+      
+      if (problem.variables.length === 3) {
+        kmapCells = document.querySelectorAll('#kmap3Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback");
+        groupsContainer = document.getElementById("kmapGroups3");
+        finalExpression = document.getElementById("finalExpression3");
+      } else {
+        kmapCells = document.querySelectorAll('#kmap4Section .k-map-cell');
+        feedback = document.getElementById("kmapFeedback4");
+        groupsContainer = document.getElementById("kmapGroups4");
+        finalExpression = document.getElementById("finalExpression4");
+      }
+      
+      kmapCells.forEach(cell => {
+        cell.setAttribute('data-value', "0");
+        cell.textContent = "0";
+        cell.classList.remove('correct');
+      });
+      
+      feedback.textContent = "";
+      feedback.className = "k-map-feedback";
+      groupsContainer.innerHTML = "";
+      finalExpression.textContent = "";
+    }
+
+    function nextProblem() {
+      // Add current problem to used list
+      usedProblems.push(currentProblem);
+      
+      // If all problems have been used, reset the used list
+      if (usedProblems.length === problems.length) {
+        usedProblems = [];
+      }
+      
+      // Find a random problem that hasn't been used yet
+      let nextIndex;
+      do {
+        nextIndex = Math.floor(Math.random() * problems.length);
+      } while (usedProblems.includes(nextIndex));
+      
+      currentProblem = nextIndex;
+      loadProblem(currentProblem);
+    }
+
+    /* NEW FUNCTIONS FOR CHATBOT AND TUTORIAL */
+
+    function toggleChatbot() {
+      const chatbot = document.getElementById("chatbotContainer");
+      chatbot.style.display = chatbot.style.display === "none" ? "block" : "none";
+    }
+
+    function addChatbotMessage(message, isUser) {
+      const chatbotBody = document.getElementById("chatbotBody");
+      const messageDiv = document.createElement("div");
+      messageDiv.className = `chatbotMessage ${isUser ? 'userMessage' : 'botMessage'}`;
+      messageDiv.textContent = message;
+      chatbotBody.appendChild(messageDiv);
+      chatbotBody.scrollTop = chatbotBody.scrollHeight;
+    }
+
+    function addChatbotWelcomeMessage() {
+      addChatbotMessage("Hi! I'm your CircuitVerse assistant. Ask me anything about Boolean algebra, K-maps, or this simulation!", false);
+    }
+
+    function sendChatbotMessage() {
+      const input = document.getElementById("chatbotInput");
+      const message = input.value.trim();
+      
+      if (message) {
+        addChatbotMessage(message, true);
+        input.value = "";
+        
+        // Simple chatbot responses
+        setTimeout(() => {
+          const response = generateChatbotResponse(message);
+          addChatbotMessage(response, false);
+        }, 500);
+      }
+    }
+
+    function generateChatbotResponse(message) {
+      const lowerMessage = message.toLowerCase();
+      
+      if (lowerMessage.includes("boolean") || lowerMessage.includes("expression")) {
+        return "Boolean expressions represent logic circuits using operators: AND (*), OR (+), NOT (~). For example, A*~B + C means (A AND NOT B) OR C.";
+      } else if (lowerMessage.includes("k-map") || lowerMessage.includes("karnaugh")) {
+        return "K-maps are grids used to simplify Boolean expressions. Group adjacent 1s in sizes of 1, 2, 4, or 8. Each group corresponds to a product term in the simplified expression.";
+      } else if (lowerMessage.includes("simplify")) {
+        return "To simplify Boolean expressions: 1) Use algebraic rules, 2) Create a truth table, 3) Use a K-map to find largest groups of 1s. The current problem can be simplified to: " + problems[currentProblem].simplifiedExpression;
+      } else if (lowerMessage.includes("truth table")) {
+        return "A truth table lists all possible input combinations and their outputs. For " + problems[currentProblem].variables.length + " variables, there are " + Math.pow(2, problems[currentProblem].variables.length) + " rows.";
+      } else if (lowerMessage.includes("help") || lowerMessage.includes("stuck")) {
+        return "Try these steps: 1) Convert the scenario to a Boolean expression, 2) Create a truth table, 3) Fill the K-map, 4) Group adjacent 1s to simplify.";
+      } else {
+        return "I can help with Boolean algebra, K-maps, and this simulation. Try asking about how to simplify expressions or use K-maps!";
+      }
+    }
+
+    // Tutorial functions
+    function startInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(showTutorialDialog, 10000); // 10 seconds
+    }
+
+    function resetInactivityTimer() {
+      clearTimeout(inactivityTimer);
+      startInactivityTimer();
+    }
+
+    function showTutorialDialog() {
+      document.getElementById("tutorialOverlay").style.display = "block";
+      document.getElementById("tutorialDialog").style.display = "block";
+      document.getElementById("tutorialDialogText").textContent = tutorialSteps[currentTutorialStep].dialog;
+    }
+
+    function continueTutorial() {
+      document.getElementById("tutorialOverlay").style.display = "none";
+      document.getElementById("tutorialDialog").style.display = "none";
+      showTutorialHint();
+    }
+
+    function skipTutorial() {
+      document.getElementById("tutorialOverlay").style.display = "none";
+      document.getElementById("tutorialDialog").style.display = "none";
+      currentTutorialStep = (currentTutorialStep + 1) % tutorialSteps.length;
+      resetInactivityTimer();
+    }
+
+    function showTutorialHint() {
+      const step = tutorialSteps[currentTutorialStep];
+      const element = document.querySelector(step.element);
+      
+      if (element) {
+        const rect = element.getBoundingClientRect();
+        const cursor = document.getElementById("tutorialCursor");
+        const hint = document.getElementById("tutorialHint");
+        
+        cursor.style.display = "block";
+        cursor.style.left = (rect.left + rect.width/2 - 10) + "px";
+        cursor.style.top = (rect.top + rect.height/2 - 10) + "px";
+        
+        hint.style.display = "block";
+        hint.textContent = step.hint;
+        hint.style.left = (rect.left + rect.width/2 - 100) + "px";
+        hint.style.top = (rect.top + rect.height + 10) + "px";
+        
+        // Advance to next step when user interacts with the element
+        element.addEventListener('click', function advanceTutorial() {
+          cursor.style.display = "none";
+          hint.style.display = "none";
+          currentTutorialStep = (currentTutorialStep + 1) % tutorialSteps.length;
+          element.removeEventListener('click', advanceTutorial);
+          resetInactivityTimer();
+        }, { once: true });
+      } else {
+        currentTutorialStep = (currentTutorialStep + 1) % tutorialSteps.length;
+        resetInactivityTimer();
+      }
+    }
+
+    // Allow sending messages with Enter key
+    document.getElementById("chatbotInput").addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        sendChatbotMessage();
+      }
+    });
+
+    // Toggle chatbot with button
+    document.getElementById("chatbotToggle").addEventListener('click', toggleChatbot);
+  </script>
+</body>
+</html>
